@@ -4,10 +4,22 @@ from core.learner import learn
 from core.knowledge import save_knowledge, load_knowledge
 from core.brain import think
 from core.planner import plan
+import time
 
 
 memory = MemoryManager()
 messages = memory.load_history()
+
+
+def benchmark(label, function, *args):
+    start = time.perf_counter()
+    try:
+        result = function(*args)
+    finally:
+        end = time.perf_counter()
+        elapsed = end - start
+        print(f"[Benchmark] {label}: {elapsed:.2f}s")
+    return result
 
 
 while True:
@@ -21,11 +33,19 @@ while True:
     knowledge = load_knowledge()
     knowledge_topics = list(knowledge.keys())
 
-    plan_data = plan(user_input, facts, knowledge_topics)
+    plan_data = benchmark(
+        "Planner", plan, user_input, facts, knowledge_topics
+    )
 
     print(f"[Planner] {plan_data}")
 
-    forget_data = find_forget_memory(user_input, facts)
+    forgetting_any =['forget', 'delete', 'remove', 'erase']
+    if any(word in user_input.lower() for word in forgetting_any):
+        forget_data = benchmark(
+            'Forget Memory', find_forget_memory,user_input, facts
+        )
+    else:
+        forget_data = {"forget": False}
 
     if forget_data.get("forget"):
         memory.forget(forget_data["key"])
@@ -33,7 +53,10 @@ while True:
 
 
 
-    recall_data = find_memory(user_input, facts)
+    recall_data = benchmark(
+        'Memory Recall',find_memory,user_input, facts
+    )
+
     print(f"[Memory Recall] {recall_data}")
 
     current_messages = messages.copy()
@@ -82,7 +105,9 @@ while True:
     )
 
     if should_check_memory:
-        memory_data = extract_memory(user_input, facts)
+        memory_data =benchmark(
+            'Memory Extraction',extract_memory,user_input, facts
+        )
 
         if memory_data.get("remember"):
             memory.remember(
@@ -90,9 +115,14 @@ while True:
                 memory_data["value"]
             )
 
-    response = think(current_messages)
+    response = benchmark(
+        'Brain', think, current_messages
+    )
 
-    result = learn(user_input)
+    result = benchmark(
+        'Learning',learn, user_input
+    )
+
     if result.get("learn"):
         save_knowledge(result)
 

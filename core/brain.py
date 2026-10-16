@@ -52,12 +52,15 @@ def think(messages):
         messages=messages,
         tools=[calculator_tool],
         stream=False,
+        think=False,
         options={
-            "num_predict": 256,
+            "num_predict": 512,
         },
     )
 
     assistant_message = response.message
+
+    print(assistant_message.model_dump(exclude_none=True))
 
     # Add the assistant response to the conversation
     messages.append(assistant_message.model_dump(exclude_none=True))
@@ -91,7 +94,8 @@ def think(messages):
             messages=messages,
             tools=[calculator_tool],
             options={
-                "num_predict": 256,
+                "num_predict": 512,
+                "think": False,
             },
         )
 
